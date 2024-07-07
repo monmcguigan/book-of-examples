@@ -13,9 +13,9 @@ getListStudents : JsonData -> Result (List Student) JsonErrors
 getListStudents = \json ->
     when json is
         Object obj ->
-            when Dict.get obj "students" is
-                Ok students -> checkStudentList students
-                _ -> Err (FieldNotFound "Expected field with name \"students\" in object")
+            Dict.get obj "students"
+            |> Result.try \s -> checkStudentList s # Result a err, (a -> Result b err) -> Result b err
+            |> Result.onErr \_ -> Err (FieldNotFound "Expected field with name \"students\" in object") # Result a err, (err -> Result a otherErr) -> Result a otherErr
 
         _ -> Err (ExpectedJsonObject "Expected an Object")
 
