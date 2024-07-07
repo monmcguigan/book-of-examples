@@ -33,15 +33,9 @@ checkStudentObj = \json ->
         Object obj ->
             when Dict.get obj "name" is
                 Ok (String name) ->
-                    when Dict.get obj "modules" is
-                        Ok modules ->
-                            when checkModulesList modules is
-                                Ok goodMods ->
-                                    Ok ({ name: name, modules: goodMods })
-
-                                Err e -> Err e
-
-                        _ -> Err (FieldNotFound "Expected field with name \"modules\" in object")
+                    Dict.get obj "modules"
+                    |> Result.try \m -> Result.try (checkModulesList m) \mods -> Ok ({ name: name, modules: mods })
+                    |> Result.onErr \_ -> Err (FieldNotFound "Expected field with name \"modules\" in object")
 
                 _ -> Err (FieldNotFound "Expected field with name \"name\" in object")
 
@@ -70,5 +64,4 @@ checkModuleObj = \json ->
                 _ -> Err (FieldNotFound "Expected field with name \"name\" in object")
 
         _ -> Err (ExpectedJsonObject "Expected an Object")
-
 
