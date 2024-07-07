@@ -1,0 +1,26 @@
+{
+    "students": [
+        {
+            "name": "Amy",
+            "modules": [
+                {
+                    "name": "Physics 101",
+                    "credits": 100
+                },
+                {
+                    "name": "Maths 101",
+                    "credits": 200
+                }
+            ]
+        },
+        {
+            "name": "John",
+            "modules": [
+                {
+                    "name": "Maths 101",
+                    "credits": 200
+                }
+            ]
+        }
+    ]
+}
