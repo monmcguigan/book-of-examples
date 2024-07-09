@@ -1,7 +1,8 @@
 module [getListStudents]
 
-import JsonData exposing [JsonData]
+# import JsonData exposing [JsonData]
 import Student exposing [Student, Module]
+import Decoding exposing [JsonDecoder, list]
 
 JsonErrors : [
     FieldNotFound Str,
@@ -9,17 +10,22 @@ JsonErrors : [
     ExpectedJsonArray Str,
 ]
 
-getListStudents : JsonData -> Result (List Student) JsonErrors
+Students : List Student
+Modules : List Module
+
+# getListStudents : JsonData -> Result (List Student) JsonErrors
+getListStudents : JsonDecoder Students JsonErrors
 getListStudents = \json ->
     when json is
         Object obj ->
             Dict.get obj "students"
-            |> Result.try \s -> checkStudentList s # Result a err, (a -> Result b err) -> Result b err
+            |> Result.try \s -> list checkStudentObj s # Result a err, (a -> Result b err) -> Result b err
             |> Result.onErr \_ -> Err (FieldNotFound "Expected field with name \"students\" in object") # Result a err, (err -> Result a otherErr) -> Result a otherErr
 
         _ -> Err (ExpectedJsonObject "Expected an Object")
 
-checkStudentList : JsonData -> Result (List Student) JsonErrors
+# checkStudentList : JsonData -> Result (List Student) JsonErrors
+checkStudentList : JsonDecoder Students JsonErrors
 checkStudentList = \json ->
     when json is
         Arr students ->
@@ -27,21 +33,24 @@ checkStudentList = \json ->
 
         _ -> Err (ExpectedJsonArray "Expected an Array")
 
-checkStudentObj : JsonData -> Result Student JsonErrors
+# checkStudentObj : JsonData -> Result Student JsonErrors
+checkStudentObj : JsonDecoder Student JsonErrors
 checkStudentObj = \json ->
     when json is
         Object obj ->
             when Dict.get obj "name" is
                 Ok (String name) ->
                     Dict.get obj "modules"
-                    |> Result.try \m -> Result.try (checkModulesList m) \mods -> Ok ({ name: name, modules: mods })
+                    |> Result.try \m -> (list checkModuleObj m)
+                    |> Result.try \modules -> Ok ({ name: name, modules: modules })
                     |> Result.onErr \_ -> Err (FieldNotFound "Expected field with name \"modules\" in object")
-
+                    
                 _ -> Err (FieldNotFound "Expected field with name \"name\" in object")
 
         _ -> Err (ExpectedJsonObject "Expected an Object")
 
-checkModulesList : JsonData -> Result (List Module) JsonErrors
+# checkModulesList : JsonData -> Result (List Module) JsonErrors
+checkModulesList : JsonDecoder Modules JsonErrors
 checkModulesList = \json ->
     when json is
         Arr modules ->
@@ -49,7 +58,8 @@ checkModulesList = \json ->
 
         _ -> Err (ExpectedJsonArray "Expected an Array")
 
-checkModuleObj : JsonData -> Result Module JsonErrors
+# checkModuleObj : JsonData -> Result Module JsonErrors
+checkModuleObj : JsonDecoder Module JsonErrors
 checkModuleObj = \json ->
     when json is
         Object obj ->
