@@ -1,4 +1,4 @@
-module [string, number, null, list, map, map2, field, JsonDecoder, JsonErrors]
+module [string, number, null, list, map, map2, field, andThen, JsonDecoder, JsonErrors]
 import JsonData exposing [JsonData]
 
 JsonErrors : [
@@ -6,6 +6,7 @@ JsonErrors : [
     ExpectedJsonObject Str,
     ExpectedJsonArray Str,
     WrongJsonType Str,
+    KeyNotFound
 ]
 
 JsonDecoder t : JsonData -> Result t JsonErrors
@@ -43,7 +44,7 @@ null = \json ->
 list = \f, json ->
     when json is
         Arr jsonValues -> List.mapTry jsonValues f
-        _ -> Err (ArrErr "Expected an Arr when decoding")
+        _ -> Err (ExpectedJsonArray "Expected an Arr when decoding")
 
 field = \f, json, name ->
     when json is
@@ -64,6 +65,11 @@ map2 =\f, decoderA, decoderB, jsonValue ->
         (_, Err b) -> Err b
         _ -> Err "some other err"
 
+# andThen : (a -> JsonDecoder b), JsonDecoder a, JsonData -> JsonDecoder b
+andThen =\aDecoder, toB, json ->
+    when (aDecoder json) is 
+        Ok a -> (toB a) json
+        Err s -> Err s
 # TESTS
 mathsMod = Object
     (
@@ -84,7 +90,7 @@ myList = Arr [myString, otherStr]
 expect field string mathsMod "name" == Ok ("Maths 101")
 expect field string myList "name" == Err (WrongJsonType "Expected an Object when decoding")
 expect list string myList == Ok (["hello", "world"])
-expect list string mathsMod == Err (ArrErr "Expected an Arr when decoding")
+expect list string mathsMod == Err (ExpectedJsonArray "Expected an Arr when decoding")
 expect string myString == Ok("hello")
 
 modules = Arr[mathsMod, phyMod]

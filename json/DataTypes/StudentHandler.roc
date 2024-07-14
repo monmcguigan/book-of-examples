@@ -1,24 +1,24 @@
-module [getListStudents]
+module [readStudents]
 
-# import JsonData exposing [JsonData]
 import Student exposing [Student, Module]
-import Decoding exposing [JsonDecoder, list, map, map2, field, string, number]
+import Decoding exposing [JsonDecoder, list, field, string, number]
 
 Students : List Student
 
-# getLS : JsonDecoder Students
-getListStudents = \json ->
-    field (\s -> list checkStudentObj s) json "students"
+readStudents : JsonDecoder Students
+readStudents = \json ->
+    field (\s -> list readStudent s) json "students"
 
-checkStudentObj = \json ->
+readStudent : JsonDecoder Student
+readStudent = \json ->
     (field string json "name")
     |> Result.try \name -> (
-            (field (\m -> list checkModuleObj m) json "modules")
+            (field (\m -> list readModule m) json "modules")
             |> Result.try \modules -> Ok ({ name: name, modules: modules }))
 
-checkModuleObj = \json ->
+readModule : JsonDecoder Module
+readModule = \json ->
     (field string json "name")
     |> Result.try \name -> (
             (field number json "credits")
             |> Result.try \credits -> Ok ({ credits: credits, name: name }))
-

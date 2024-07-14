@@ -10,7 +10,7 @@ import jd.StudentHandler
 main =
     Stdout.line! "$(students)"
 
-expect StudentHandler.getListStudents input == Ok expected
+expect StudentHandler.readStudents input == Ok expected
 # expected Student output
 expected = [
     {
