@@ -1,7 +1,7 @@
 module [readStudents]
 
 import Student exposing [Student, Module]
-import Decoding exposing [JsonDecoder, list, field, string, number]
+import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2]
 
 Students : List Student
 
@@ -21,4 +21,7 @@ readModule = \json ->
     (field string json "name")
     |> Result.try \name -> (
             (field number json "credits")
-            |> Result.try \credits -> Ok ({ credits: credits, name: name }))
+            |> Result.try \credits -> (
+                    (field bool json "enrolled")
+                    |> Result.try \enrolled -> Ok ({ credits: credits, name: name, enrolled: enrolled })
+                ))

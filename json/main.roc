@@ -15,11 +15,11 @@ expect StudentHandler.readStudents input == Ok expected
 expected = [
     {
         name: "Amy",
-        modules: [{ name: "Maths 101", credits: 200 }, { name: "Physics 101", credits: 100 }],
+        modules: [{ name: "Maths 101", credits: 200, enrolled: Bool.true }, { name: "Physics 101", credits: 100, enrolled: Bool.false }],
     },
     {
         name: "John",
-        modules: [{ name: "Maths 101", credits: 200 }],
+        modules: [{ name: "Maths 101", credits: 200, enrolled: Bool.true }],
     },
 ]
 # JsonData representation for input
@@ -46,10 +46,12 @@ mathsMod = Object
         Dict.empty {}
         |> Dict.insert "name" (String "Maths 101")
         |> Dict.insert "credits" (Number 200)
+        |> Dict.insert "enrolled" (Boolean Bool.true)
     )
 physicsMod = Object
     (
         Dict.empty {}
         |> Dict.insert "name" (String "Physics 101")
         |> Dict.insert "credits" (Number 100)
+        |> Dict.insert "enrolled" (Boolean Bool.false)
     )

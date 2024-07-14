@@ -1,4 +1,4 @@
-module [string, number, null, list, map, map2, field, andThen, JsonDecoder, JsonErrors]
+module [string, number, null, list, bool, map, map2, field, andThen, JsonDecoder, JsonErrors]
 import JsonData exposing [JsonData]
 
 JsonErrors : [
@@ -6,7 +6,7 @@ JsonErrors : [
     ExpectedJsonObject Str,
     ExpectedJsonArray Str,
     WrongJsonType Str,
-    KeyNotFound
+    KeyNotFound,
 ]
 
 JsonDecoder t : JsonData -> Result t JsonErrors
@@ -29,11 +29,11 @@ null = \json ->
         Null -> Ok "null"
         _ -> Err (WrongJsonType "Expected a Null when decoding")
 
-# bool : JsonDecoder Bool
-# bool = \json ->
-#     when json is 
-#         Boolean bool -> Ok bool
-#         _ -> Err (WrongJsonType "Expected a Bool when decoding")
+bool : JsonDecoder Bool
+bool = \json ->
+    when json is
+        Boolean b -> Ok b
+        _ -> Err (WrongJsonType "Expected a Bool when decoding")
 
 # list : JsonDecoder (List a) DecodingErrors
 # list : JsonData -> Result (List a) DecodingErrors
@@ -49,8 +49,11 @@ list = \f, json ->
 field = \f, json, name ->
     when json is
         Object dict ->
-            Result.try (Dict.get dict name) \v -> f v
+            when Dict.get dict name is
+                Ok v -> f v
+                Err s -> Err s
 
+        # Result.try (Dict.get dict name) \v -> f v
         _ -> Err (WrongJsonType "Expected an Object when decoding")
 
 # map : (a -> b), JsonDecoder a, JsonDecoder b
@@ -58,7 +61,7 @@ map = \f, decoderA, jsonValue ->
     decoderA jsonValue
     |> Result.map f
 
-map2 =\f, decoderA, decoderB, jsonValue -> 
+map2 = \f, decoderA, decoderB, jsonValue ->
     when (decoderA jsonValue, decoderB jsonValue) is
         (Ok a, Ok b) -> Ok (f a b)
         (Err a, _) -> Err a
@@ -66,8 +69,8 @@ map2 =\f, decoderA, decoderB, jsonValue ->
         _ -> Err "some other err"
 
 # andThen : (a -> JsonDecoder b), JsonDecoder a, JsonData -> JsonDecoder b
-andThen =\aDecoder, toB, json ->
-    when (aDecoder json) is 
+andThen = \aDecoder, toB, json ->
+    when aDecoder json is
         Ok a -> (toB a) json
         Err s -> Err s
 # TESTS
@@ -86,11 +89,12 @@ phyMod = Object
 myString = String "hello"
 otherStr = String "world"
 myList = Arr [myString, otherStr]
+boolVal = Boolean Bool.true
 
 expect field string mathsMod "name" == Ok ("Maths 101")
 expect field string myList "name" == Err (WrongJsonType "Expected an Object when decoding")
 expect list string myList == Ok (["hello", "world"])
 expect list string mathsMod == Err (ExpectedJsonArray "Expected an Arr when decoding")
-expect string myString == Ok("hello")
-
-modules = Arr[mathsMod, phyMod]
+expect string myString == Ok ("hello")
+expect bool boolVal == Ok Bool.true
+modules = Arr [mathsMod, phyMod]
