@@ -28,11 +28,11 @@ null = \json ->
         Null -> Ok "null"
         _ -> Err (WrongJsonType "Expected a Null when decoding")
 
-bool : JsonDecoder Bool
-bool = \json ->
-    when json is 
-        Boolean bool -> Ok bool
-        _ -> Err (WrongJsonType "Expected a Bool when decoding")
+# bool : JsonDecoder Bool
+# bool = \json ->
+#     when json is 
+#         Boolean bool -> Ok bool
+#         _ -> Err (WrongJsonType "Expected a Bool when decoding")
 
 # list : JsonDecoder (List a) DecodingErrors
 # list : JsonData -> Result (List a) DecodingErrors
