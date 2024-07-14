@@ -7,5 +7,6 @@ Student : {
 
 Module : {
     name : Str,
-    credits : U64
+    credits : U64,
+    enrolled : Bool
 }

@@ -1,53 +1,23 @@
-module [getListStudents]
+module [readStudents]
 
-# import JsonData exposing [JsonData]
 import Student exposing [Student, Module]
-import Decoding exposing [JsonDecoder, list, map, map2, field, string]
+import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2, map3]
 
 Students : List Student
 
-# getListStudents : JsonData -> Result (List Student) JsonErrors
-getListStudents : JsonDecoder Students 
-getListStudents = \json ->
-    when json is
-        Object obj ->
-            Dict.get obj "students"
-            |> Result.try \s -> list checkStudentObj s # Result a err, (a -> Result b err) -> Result b err
-            |> Result.onErr \_ -> Err (FieldNotFound "Expected field with name \"students\" in object") # Result a err, (err -> Result a otherErr) -> Result a otherErr
+readStudents : JsonDecoder Students
+readStudents = \json ->
+    (field "students" (\s -> (list readStudent) s)) json
 
-        _ -> Err (ExpectedJsonObject "Expected an Object")
+readStudent : JsonDecoder Student
+readStudent = \json ->
+    n = field "name" string
+    (map2 n (field "modules" (\m -> (list readModule) m)) (\(name, mods) -> { name: name, modules: mods })) json
 
-# checkStudentObj : JsonData -> Result Student JsonErrors
-
-checkStudentObj : JsonDecoder Student
-checkStudentObj = \json ->
-    when json is
-        Object obj ->
-            when Dict.get obj "name" is
-                Ok (String name) ->
-                    Dict.get obj "modules"
-                    |> Result.try \m -> list checkModuleObj m
-                    |> Result.try \modules -> Ok ({ name: name, modules: modules })
-                    |> Result.onErr \_ -> Err (FieldNotFound "Expected field with name \"modules\" in object")
-
-                _ -> Err (FieldNotFound "Expected field with name \"name\" in object")
-
-        _ -> Err (ExpectedJsonObject "Expected an Object")
-
-# checkModuleObj : JsonData -> Result Module JsonErrors
-checkModuleObj : JsonDecoder Module
-checkModuleObj = \json ->
-    when json is
-        Object obj ->
-            when Dict.get obj "name" is
-                Ok (String name) ->
-                    when Dict.get obj "credits" is
-                        Ok (Number credits) ->
-                            Ok ({ credits: credits, name: name })
-
-                        _ -> Err (FieldNotFound "Expected field with name \"credits\" in object")
-
-                _ -> Err (FieldNotFound "Expected field with name \"name\" in object")
-
-        _ -> Err (ExpectedJsonObject "Expected an Object")
-
+readModule : JsonDecoder Module
+readModule = \json ->
+    n = field "name" string
+    c = field "credits" number
+    e = field "enrolled" bool
+    # Something I'm not entirely sure about is having to pass in json at the end of line 23. It's not intuitive to me what's going on 
+    (map3 n c e \(name, creds, en) -> { name: name, credits: creds, enrolled: en }) json
