@@ -2,18 +2,12 @@ module [getListStudents]
 
 # import JsonData exposing [JsonData]
 import Student exposing [Student, Module]
-import Decoding exposing [JsonDecoder, list]
-
-JsonErrors : [
-    FieldNotFound Str,
-    ExpectedJsonObject Str,
-    ExpectedJsonArray Str,
-]
+import Decoding exposing [JsonDecoder, list, map, map2, field, string]
 
 Students : List Student
 
 # getListStudents : JsonData -> Result (List Student) JsonErrors
-getListStudents : JsonDecoder Students JsonErrors
+getListStudents : JsonDecoder Students 
 getListStudents = \json ->
     when json is
         Object obj ->
@@ -24,15 +18,15 @@ getListStudents = \json ->
         _ -> Err (ExpectedJsonObject "Expected an Object")
 
 # checkStudentObj : JsonData -> Result Student JsonErrors
-checkStudentObj : JsonDecoder Student JsonErrors
+
+checkStudentObj : JsonDecoder Student
 checkStudentObj = \json ->
     when json is
         Object obj ->
             when Dict.get obj "name" is
                 Ok (String name) ->
                     Dict.get obj "modules"
-                    |> Result.try \m -> list checkModuleObj m
-                    |> Result.try \modules -> Ok ({ name: name, modules: modules })
+                    |> Result.try \m -> Result.try (checkModulesList m) \mods -> Ok ({ name: name, modules: mods })
                     |> Result.onErr \_ -> Err (FieldNotFound "Expected field with name \"modules\" in object")
 
                 _ -> Err (FieldNotFound "Expected field with name \"name\" in object")
@@ -40,7 +34,7 @@ checkStudentObj = \json ->
         _ -> Err (ExpectedJsonObject "Expected an Object")
 
 # checkModuleObj : JsonData -> Result Module JsonErrors
-checkModuleObj : JsonDecoder Module JsonErrors
+checkModuleObj : JsonDecoder Module
 checkModuleObj = \json ->
     when json is
         Object obj ->
