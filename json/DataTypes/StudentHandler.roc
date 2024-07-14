@@ -1,27 +1,23 @@
 module [readStudents]
 
 import Student exposing [Student, Module]
-import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2]
+import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2, map3]
 
 Students : List Student
 
 readStudents : JsonDecoder Students
 readStudents = \json ->
-    field (\s -> list readStudent s) json "students"
+    (field "students" (\s -> (list readStudent) s)) json
 
 readStudent : JsonDecoder Student
 readStudent = \json ->
-    (field string json "name")
-    |> Result.try \name -> (
-            (field (\m -> list readModule m) json "modules")
-            |> Result.try \modules -> Ok ({ name: name, modules: modules }))
+    n = field "name" string
+    (map2 n (field "modules" (\m -> (list readModule) m)) (\(name, mods) -> { name: name, modules: mods })) json
 
 readModule : JsonDecoder Module
 readModule = \json ->
-    (field string json "name")
-    |> Result.try \name -> (
-            (field number json "credits")
-            |> Result.try \credits -> (
-                    (field bool json "enrolled")
-                    |> Result.try \enrolled -> Ok ({ credits: credits, name: name, enrolled: enrolled })
-                ))
+    n = field "name" string
+    c = field "credits" number
+    e = field "enrolled" bool
+    # Something I'm not entirely sure about is having to pass in json at the end of line 23. It's not intuitive to me what's going on 
+    (map3 n c e \(name, creds, en) -> { name: name, credits: creds, enrolled: en }) json
