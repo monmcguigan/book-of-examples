@@ -1,15 +1,15 @@
-module [string, number, null, bool, list, field, map, map2, map3, andThen, JsonDecoder, JsonErrors]
+module [string, number, null, bool, list, field, map, map2, map3, andThen, JsonDecoder, DecodingErrors]
 import JsonData exposing [JsonData]
 
-JsonErrors : [
+DecodingErrors : [
     FieldNotFound Str,
     ExpectedJsonObject Str,
     ExpectedJsonArray Str,
     WrongJsonType Str,
-    KeyNotFound,
+    KeyNotFound
 ]
 
-JsonDecoder t : JsonData -> Result t JsonErrors
+JsonDecoder t : JsonData -> Result t DecodingErrors
 
 string : JsonDecoder Str
 string = \json ->
@@ -119,6 +119,7 @@ expect (list string) mathsMod == Err (ExpectedJsonArray "Expected an Arr when de
 # field tests
 expect nameDecoder mathsMod == Ok ("Maths 101")
 expect nameDecoder myList == Err (WrongJsonType "Expected an Object when decoding")
+expect (field "blah" string) mathsMod == Err KeyNotFound
 
 # primitive types
 expect string (String "hello") == Ok ("hello")
