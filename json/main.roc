@@ -5,21 +5,25 @@ app [main] {
 import "DataTypes/StudentData.json" as students : Str
 import pf.Stdout
 import pf.Task
-import jd.StudentHandler
+import jd.DecodeStudent
+import jd.DecodeStudentLong
 
 main =
     Stdout.line! "$(students)"
 
-expect StudentHandler.readStudents input == Ok expected
+expect DecodeStudent.readStudents input == Ok expected
+expect DecodeStudentLong.getListStudents input == Ok expected
 # expected Student output
 expected = [
-    {
+    CurrentStudent {
         name: "Amy",
         modules: [{ name: "Maths 101", credits: 200, enrolled: Bool.true }, { name: "Physics 101", credits: 100, enrolled: Bool.false }],
+        currentGrade: 75,
     },
-    {
+    GraduatedStudent {
         name: "John",
         modules: [{ name: "Maths 101", credits: 200, enrolled: Bool.true }],
+        finalGrade: 65,
     },
 ]
 # JsonData representation for input
@@ -30,6 +34,7 @@ amyObj =
             Dict.empty {}
             |> Dict.insert "name" (String "Amy")
             |> Dict.insert "modules" (amyMods)
+            |> Dict.insert "currentGrade" (Number 75)
         )
 johnObj =
     Object
@@ -37,6 +42,7 @@ johnObj =
             Dict.empty {}
             |> Dict.insert "name" (String "John")
             |> Dict.insert "modules" (johnMod)
+            |> Dict.insert "finalGrade" (Number 65)
         )
 amyMods = Arr ([mathsMod, physicsMod])
 johnMod = Arr ([mathsMod])

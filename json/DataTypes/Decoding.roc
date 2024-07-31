@@ -1,33 +1,28 @@
-module [string, number, null, bool, list, field, map, map2, map3, andThen, JsonDecoder, DecodingErrors]
-import JsonData exposing [JsonData]
+module [string, number, bool, list, field, map, map2, map3, andThen, or, JsonDecoder, DecodingErrors]
+import JsonData exposing [Json]
 
 DecodingErrors : [
     FieldNotFound Str,
     ExpectedJsonObject Str,
     ExpectedJsonArray Str,
     WrongJsonType Str,
-    KeyNotFound
+    KeyNotFound,
+    DecodingFailed
 ]
-
-JsonDecoder t : JsonData -> Result t DecodingErrors
+    
+JsonDecoder t : Json -> Result t DecodingErrors
 
 string : JsonDecoder Str
 string = \json ->
     when json is
         String str -> Ok str
-        _ -> Err (WrongJsonType "Expected a String when decoding")
+        _ -> Err (WrongJsonType "Expected a String when decoding, found $(printJsonType json)")
 
 number : JsonDecoder U64
 number = \json ->
     when json is
         Number num -> Ok num
         _ -> Err (WrongJsonType "Expected a Number when decoding")
-
-null : JsonDecoder Str
-null = \json ->
-    when json is
-        Null -> Ok "null"
-        _ -> Err (WrongJsonType "Expected a Null when decoding")
 
 bool : JsonDecoder Bool
 bool = \json ->
@@ -83,6 +78,40 @@ andThen = \toB, aDecoder  ->
             Ok a -> (toB a) data
             Err a -> Err a
 
+
+
+or : JsonDecoder a, JsonDecoder a -> JsonDecoder a
+or = \decoderA, decoderB -> 
+    \data -> 
+       decoderA data 
+       |> Result.onErr \_ -> (decoderB data)
+                
+
+# TODO - Sum and Product decoders 
+# product=\a, b, c, decoderA, decoderB, decoderC, f -> 
+ # could you take in a dictionary of Dict Str JsonDecoder a?
+ product : Str, Str, Str, JsonDecoder a, JsonDecoder b, JsonDecoder c, ((a, b, c) -> d) -> JsonDecoder d
+ altPr : List (Str, JsonDecoder a) 
+
+# sum : JsonDecoder a, JsonDecoder b -> JsonDecoder c
+# sum : [JsonDecoder a] -> JsonDecoder a
+# sum =\ds -> 
+#     \data -> 
+#         List.mapTry ds (\decoder -> decoder data)
+        # when decoderA data is 
+        #     Ok a -> a
+        #     _ -> when decoderB data is 
+        #         Ok b -> b
+        #         Err b -> Err b
+# sum: List (JsonDecoder a) -> JsonDecoder a ⁠
+
+# sum : [JsonDecoder a] -> JsonDecoder a
+# sum =\ decoders -> 
+#     \data -> 
+#         List.walkTry decoders \d -> d
+
+
+
 # TESTS
 mathsMod = Object
     (
@@ -123,6 +152,16 @@ expect (field "blah" string) mathsMod == Err KeyNotFound
 
 # primitive types
 expect string (String "hello") == Ok ("hello")
+expect string (Number 123) == Err (WrongJsonType "Expected a String when decoding, found Number 123")
 expect bool (Boolean Bool.true) == Ok Bool.true
 expect number (Number 400) == Ok (400)
-expect null (Null) == Ok ("null")
+# expect null (Null) == Ok ("null")
+
+printJsonType : Json -> Str
+printJsonType = \json ->
+    when json is 
+        String str -> "String $(str)"
+        Number num -> "Number $(Num.toStr num)"
+        Boolean _ -> "Boolean"
+        Object _ -> "Object"
+        Arr _ -> "Arr"

@@ -1,26 +1,31 @@
 {
     "students": [
         {
-            "name": "Amy",
+            "name": "Alice",
             "modules": [
                 {
                     "name": "Physics 101",
-                    "credits": 100
+                    "credits": 10,
+                    "enrolled": true
                 },
                 {
                     "name": "Maths 101",
-                    "credits": 200
+                    "credits": 20,
+                    "enrolled": true
                 }
-            ]
+            ],
+            "currentGrade": 75
         },
         {
-            "name": "John",
+            "name": "Bob",
             "modules": [
                 {
                     "name": "Maths 101",
-                    "credits": 200
+                    "credits": 20,
+                    "enrolled": false
                 }
-            ]
+            ],
+            "finalGrade": 70
         }
     ]
 }
