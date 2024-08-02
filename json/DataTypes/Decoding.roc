@@ -1,4 +1,4 @@
-module [string, number, bool, list, field, map, map2, map3, andThen, or, JsonDecoder, DecodingErrors]
+module [string, number, bool, list, field, map, map2, map3, andThen, or, oneOf, JsonDecoder, DecodingErrors]
 import JsonData exposing [Json]
 
 DecodingErrors : [
@@ -7,7 +7,8 @@ DecodingErrors : [
     ExpectedJsonArray Str,
     WrongJsonType Str,
     KeyNotFound,
-    DecodingFailed
+    DecodingFailed,
+    OneOfFailed Str
 ]
     
 JsonDecoder t : Json -> Result t DecodingErrors
@@ -86,7 +87,19 @@ or = \decoderA, decoderB ->
        decoderA data 
        |> Result.onErr \_ -> (decoderB data)
                 
+oneOf : List (JsonDecoder a) -> JsonDecoder a
+oneOf =\decoders -> 
+    \json -> 
+        help =\decs -> 
+             when decs is 
+                [head, .. as tail] -> 
+                    when head json is 
+                        Ok res -> Ok res
+                        Err _ -> help tail
+                [] -> Err(OneOfFailed "No decoders provided to oneOf")
+        help decoders
 
+            
 # TODO - Sum and Product decoders 
 # product=\a, b, c, decoderA, decoderB, decoderC, f -> 
  # could you take in a dictionary of Dict Str JsonDecoder a?

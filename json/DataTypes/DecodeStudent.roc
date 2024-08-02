@@ -1,7 +1,7 @@
 module [readStudents]
 
 import Student exposing [Student, Module]
-import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2, map3, or]
+import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2, map3, or, oneOf]
 
 Students : List Student
 
@@ -18,7 +18,7 @@ readStudent = \json ->
     finalGrade = field "finalGrade" number
     currentStudent = map3 nameField modulesField currentGrade (\(name, mods, cg) -> CurrentStudent { name: name, modules: mods, currentGrade: cg })
     graduatedStudent = map3 nameField modulesField finalGrade (\(name, mods, fg) -> GraduatedStudent { name: name, modules: mods, finalGrade: fg })
-    (or currentStudent graduatedStudent) json
+    (oneOf [currentStudent, graduatedStudent]) json
 
 readModule : JsonDecoder Module
 readModule = \json ->
