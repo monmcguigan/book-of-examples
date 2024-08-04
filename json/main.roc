@@ -9,7 +9,7 @@ import jd.DecodeStudent
 import jd.DecodeStudentLong
 
 main =
-    Stdout.line! "$(students)"
+    Stdout.line! students
 
 expect DecodeStudent.readStudents input == Ok expected
 expect DecodeStudentLong.getListStudents input == Ok expected
@@ -27,37 +27,31 @@ expected = [
     },
 ]
 # JsonData representation for input
-input = Object (Dict.empty {} |> Dict.insert "students" (Arr [amyObj, johnObj]))
+input = Object (Dict.single "students" (Arr [amyObj, johnObj]))
 amyObj =
-    Object
-        (
-            Dict.empty {}
-            |> Dict.insert "name" (String "Amy")
-            |> Dict.insert "modules" (amyMods)
-            |> Dict.insert "currentGrade" (Number 75)
-        )
+    Dict.empty {}
+    |> Dict.insert "name" (String "Amy")
+    |> Dict.insert "modules" (amyMods)
+    |> Dict.insert "currentGrade" (Number 75)
+    |> Object
 johnObj =
-    Object
-        (
-            Dict.empty {}
-            |> Dict.insert "name" (String "John")
-            |> Dict.insert "modules" (johnMod)
-            |> Dict.insert "finalGrade" (Number 65)
-        )
-amyMods = Arr ([mathsMod, physicsMod])
-johnMod = Arr ([mathsMod])
+    Dict.empty {}
+    |> Dict.insert "name" (String "John")
+    |> Dict.insert "modules" (johnMod)
+    |> Dict.insert "finalGrade" (Number 65)
+    |> Object
+amyMods = Arr [mathsMod, physicsMod]
+johnMod = Arr [mathsMod]
 
-mathsMod = Object
-    (
-        Dict.empty {}
-        |> Dict.insert "name" (String "Maths 101")
-        |> Dict.insert "credits" (Number 200)
-        |> Dict.insert "enrolled" (Boolean Bool.true)
-    )
-physicsMod = Object
-    (
-        Dict.empty {}
-        |> Dict.insert "name" (String "Physics 101")
-        |> Dict.insert "credits" (Number 100)
-        |> Dict.insert "enrolled" (Boolean Bool.false)
-    )
+mathsMod =
+    Dict.empty {}
+    |> Dict.insert "name" (String "Maths 101")
+    |> Dict.insert "credits" (Number 200)
+    |> Dict.insert "enrolled" (Boolean Bool.true)
+    |> Object
+physicsMod =
+    Dict.empty {}
+    |> Dict.insert "name" (String "Physics 101")
+    |> Dict.insert "credits" (Number 100)
+    |> Dict.insert "enrolled" (Boolean Bool.false)
+    |> Object

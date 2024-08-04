@@ -1,4 +1,4 @@
-module [getListStudents]
+module [readStudents]
 
 import JsonData exposing [Json]
 import Student exposing [Student, Module]
@@ -9,33 +9,35 @@ JsonErrors : [
     ExpectedJsonArray Str,
 ]
 
-getListStudents : Json -> Result (List Student) JsonErrors
-getListStudents = \json ->
+Students : List Student
+
+readStudents : Json -> Result Students JsonErrors
+readStudents = \json ->
     when json is
         Object obj ->
             when Dict.get obj "students" is
-                Ok students -> checkStudentList students
-                _ -> Err (FieldNotFound "Expected field with name students in object")
+                Ok students -> checkStudentArr students
+                Err KeyNotFound -> Err (FieldNotFound "Expected field with name students in object")
 
         _ -> Err (ExpectedJsonObject "Expected an Object")
 
-checkStudentList : Json -> Result (List Student) JsonErrors
-checkStudentList = \json ->
+checkStudentArr : Json -> Result Students JsonErrors
+checkStudentArr = \json ->
     when json is
         Arr students ->
-            List.mapTry (List.map students checkStudentObj) \x -> x
+            List.mapTry students readStudent
 
         _ -> Err (ExpectedJsonArray "Expected an Array")
 
-checkStudentObj : Json -> Result Student JsonErrors
-checkStudentObj = \json ->
+readStudent : Json -> Result Student JsonErrors
+readStudent = \json ->
     when json is
         Object obj ->
             when Dict.get obj "name" is
                 Ok (String name) ->
                     when Dict.get obj "modules" is
                         Ok modules ->
-                            when checkModulesList modules is
+                            when checkModulesArr modules is
                                 Ok goodMods ->
                                     when Dict.get obj "finalGrade" is
                                         Ok (Number fg) -> Ok (GraduatedStudent { name: name, modules: goodMods, finalGrade: fg })
@@ -52,16 +54,16 @@ checkStudentObj = \json ->
 
         _ -> Err (ExpectedJsonObject "Expected an Object")
 
-checkModulesList : Json -> Result (List Module) JsonErrors
-checkModulesList = \json ->
+checkModulesArr : Json -> Result (List Module) JsonErrors
+checkModulesArr = \json ->
     when json is
         Arr modules ->
-            List.mapTry (List.map modules readModuleObject) \x -> x
+            List.mapTry modules readModule
 
         _ -> Err (ExpectedJsonArray "Expected an Array")
 
-readModuleObject : Json -> Result Module JsonErrors
-readModuleObject = \json ->
+readModule : Json -> Result Module JsonErrors
+readModule = \json ->
     when json is
         Object fields ->
             when Dict.get fields "name" is
@@ -70,7 +72,7 @@ readModuleObject = \json ->
                         Ok (Number credits) ->
                             when Dict.get fields "enrolled" is
                                 Ok (Boolean enrolled) ->
-                                    Ok ({ name: name, credits: credits, enrolled: enrolled })
+                                    Ok ({ name, credits, enrolled })
 
                                 _ -> Err (FieldNotFound "Expected field with name \"credits\" in object")
 

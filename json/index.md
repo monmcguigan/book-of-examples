@@ -1,5 +1,5 @@
 # Goals of chapter
-I want to show a scale model of how you could JSON decoding (and encoding) in Roc. Doing so will demonstrate using ADTs for modelling your data, pattern matching, function reuse and how to build a small Codec libary.
+I want to show a scale model of how you could JSON decoding (and encoding) in Roc. Doing so will demonstrate using tag unions for modelling your data, pattern matching, function reuse and how to build a small Codec libary.
 
 [This article](https://dev.to/matthewsj/you-could-have-designed-the-jsondecode-library-2d8) was a great help in thinking about how to teach people these concepts. 
 

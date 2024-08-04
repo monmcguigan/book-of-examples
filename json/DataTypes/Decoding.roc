@@ -17,7 +17,8 @@ string : JsonDecoder Str
 string = \json ->
     when json is
         String str -> Ok str
-        _ -> Err (WrongJsonType "Expected a String when decoding, found $(printJsonType json)")
+        _ -> Err (WrongJsonType "Expected a String when decoding, found $(typeToStr
+         json)")
 
 number : JsonDecoder U64
 number = \json ->
@@ -55,19 +56,19 @@ map = \decoderA, f ->
 # \data -> decoderA data |> Result.map f
 # decoderA |> Result.map f
 
-map2 : JsonDecoder a, JsonDecoder b, ((a, b) -> c) -> JsonDecoder c
+map2 : JsonDecoder a, JsonDecoder b, (a, b -> c) -> JsonDecoder c
 map2 = \decoderA, decoderB, f ->
     \data ->
         when (decoderA data, decoderB data) is
-            (Ok a, Ok b) -> Ok (f (a, b))
+            (Ok a, Ok b) -> Ok (f a b)
             (Err a, _) -> Err a
             (_, Err b) -> Err b
 
-map3 : JsonDecoder a, JsonDecoder b, JsonDecoder c, ((a, b, c) -> d) -> JsonDecoder d
+map3 : JsonDecoder a, JsonDecoder b, JsonDecoder c, (a, b, c -> d) -> JsonDecoder d
 map3 = \decoderA, decoderB, decoderC, f ->
     \data ->
         when (decoderA data, decoderB data, decoderC data) is
-            (Ok a, Ok b, Ok c) -> Ok (f (a, b, c))
+            (Ok a, Ok b, Ok c) -> Ok (f a b c)
             (Err a, _, _) -> Err a
             (_, Err b, _) -> Err b
             (_, _, Err c) -> Err c
@@ -148,10 +149,10 @@ expect (map nameDecoder \name -> { name: name }) phyMod == Ok ({ name: "Physics 
 expect (map enrolledDecoder \name -> { name: name }) phyMod == Err(KeyNotFound)
 
 # map2 tests
-expect (map2 nameDecoder creditsDecoder \(name, credits) -> { name: name, credits: credits }) (phyMod) == Ok ({ name: "Physics 101", credits: 200 })
+expect (map2 nameDecoder creditsDecoder \name, credits -> { name: name, credits: credits }) (phyMod) == Ok ({ name: "Physics 101", credits: 200 })
 
 # map3 tests
-expect (map3 nameDecoder creditsDecoder enrolledDecoder \(name, credits, enrolled) -> { name: name, credits: credits, enrolled: enrolled }) (mathsMod) == Ok ({ name: "Maths 101", credits: 200, enrolled: Bool.true })
+expect (map3 nameDecoder creditsDecoder enrolledDecoder \name, credits, enrolled -> { name: name, credits: credits, enrolled: enrolled }) (mathsMod) == Ok ({ name: "Maths 101", credits: 200, enrolled: Bool.true })
 
 # list tests
 myList = Arr [String "hello", String "world"]
@@ -170,8 +171,8 @@ expect bool (Boolean Bool.true) == Ok Bool.true
 expect number (Number 400) == Ok (400)
 # expect null (Null) == Ok ("null")
 
-printJsonType : Json -> Str
-printJsonType = \json ->
+typeToStr : Json -> Str
+typeToStr = \json ->
     when json is 
         String str -> "String $(str)"
         Number num -> "Number $(Num.toStr num)"
