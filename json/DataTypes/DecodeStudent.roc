@@ -1,9 +1,10 @@
 module [readStudents]
 
 import Student exposing [Student, Module]
-import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2, map3, or, oneOf]
+import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2, map3, or, oneOf, tag]
 
 Students : List Student
+Modules : List Module
 
 readStudents : JsonDecoder Students
 readStudents = \json ->
@@ -13,14 +14,21 @@ readStudents = \json ->
 readStudent : JsonDecoder Student
 readStudent = \json ->
     nameField = field "name" string
-    modulesField = field "modules" \m -> (list readModule) m
-    currentGradeField = field "currentGrade" number
-    finalGradeField = field "finalGrade" number
-    currentStudent = map3 nameField modulesField currentGradeField 
-        \name, modules, currentGrade -> CurrentStudent { name, modules, currentGrade }
-    graduatedStudent = map3 nameField modulesField finalGradeField 
-        \name, modules, finalGrade -> GraduatedStudent { name, modules, finalGrade }
-    (oneOf [currentStudent, graduatedStudent]) json
+    gradeField = field "grade" number
+    currentStudent = map3 nameField readModules gradeField 
+        \name, modules, grade -> CurrentStudent { name, modules, grade }
+    graduatedStudent = map3 nameField readModules gradeField 
+        \name, modules, grade -> GraduatedStudent { name, modules, grade }
+    studentDecoders = 
+        Dict.empty {}
+        |> Dict.insert "currentStudent" currentStudent 
+        |> Dict.insert "graduatedStudent" graduatedStudent
+    (tag studentDecoders) json
+
+readModules : JsonDecoder Modules
+readModules = \json -> 
+    moduleField = \m -> (list readModule) m
+    (field "modules" moduleField) json
 
 readModule : JsonDecoder Module
 readModule = \json ->
@@ -29,11 +37,3 @@ readModule = \json ->
     enrolledField = field "enrolled" bool
     (map3 nameField creditsField enrolledField 
         \name, credits, enrolled -> { name, credits, enrolled }) json
-
-readMod : JsonDecoder Module
-readMod =\json -> 
-    { map2 <-
-        name: field "name" string,
-        credits: field "credits" number,
-        enrolled: field "enrolled" bool,
-    }  json

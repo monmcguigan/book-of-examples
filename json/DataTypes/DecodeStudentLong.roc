@@ -36,15 +36,17 @@ readStudent = \json ->
             when Dict.get obj "name" is
                 Ok (String name) ->
                     when Dict.get obj "modules" is
-                        Ok modules ->
-                            when checkModulesArr modules is
-                                Ok goodMods ->
-                                    when Dict.get obj "finalGrade" is
-                                        Ok (Number fg) -> Ok (GraduatedStudent { name: name, modules: goodMods, finalGrade: fg })
-                                        _ ->
-                                            when Dict.get obj "currentGrade" is
-                                                Ok (Number cg) -> Ok (CurrentStudent { name: name, modules: goodMods, currentGrade: cg })
-                                                _ -> Err (FieldNotFound "Expected field ")
+                        Ok moduleArr ->
+                            when checkModulesArr moduleArr is
+                                Ok modules ->
+                                    when Dict.get obj "grade" is
+                                        Ok (Number grade) ->
+                                            when Dict.get obj "#type" is
+                                                Ok (String "currentStudent") -> Ok (CurrentStudent { name, modules, grade })
+                                                Ok (String "graduatedStudent") -> Ok (GraduatedStudent { name, modules, grade })
+                                                _ -> Err (FieldNotFound "Expected type discriminator field in object")
+
+                                        _ -> Err (FieldNotFound "Expected field with name grade in object")
 
                                 Err e -> Err e
 

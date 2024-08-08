@@ -1,4 +1,4 @@
-module [string, number, bool, list, field, map, map2, map3, andThen, or, oneOf, JsonDecoder, DecodingErrors]
+module [string, number, bool, list, field, map, map2, map3, andThen, or, oneOf, tag, JsonDecoder, DecodingErrors]
 import JsonData exposing [Json]
 
 DecodingErrors : [
@@ -8,17 +8,17 @@ DecodingErrors : [
     WrongJsonType Str,
     KeyNotFound,
     DecodingFailed,
-    OneOfFailed Str
+    OneOfFailed Str,
 ]
-    
+
 JsonDecoder t : Json -> Result t DecodingErrors
+# check how complicated opaque types
 
 string : JsonDecoder Str
 string = \json ->
     when json is
         String str -> Ok str
-        _ -> Err (WrongJsonType "Expected a String when decoding, found $(typeToStr
-         json)")
+        _ -> Err (WrongJsonType "Expected a String when decoding, found $(typeToStr json)")
 
 number : JsonDecoder U64
 number = \json ->
@@ -74,79 +74,79 @@ map3 = \decoderA, decoderB, decoderC, f ->
             (_, _, Err c) -> Err c
 
 andThen : (a -> JsonDecoder b), JsonDecoder a -> JsonDecoder b
-andThen = \toB, aDecoder  ->
-    \data -> 
+andThen = \toB, aDecoder ->
+    \data ->
         when aDecoder data is
             Ok a -> (toB a) data
             Err a -> Err a
 
-
-
 or : JsonDecoder a, JsonDecoder a -> JsonDecoder a
-or = \decoderA, decoderB -> 
-    \data -> 
-       decoderA data 
-       |> Result.onErr \_ -> (decoderB data)
-                
+or = \decoderA, decoderB ->
+    \data ->
+        decoderA data
+        |> Result.onErr \_ -> decoderB data
+
 oneOf : List (JsonDecoder a) -> JsonDecoder a
-oneOf =\decoders -> 
-    \json -> 
-        help =\decs -> 
-             when decs is 
-                [head, .. as tail] -> 
-                    when head json is 
+oneOf = \decoders ->
+    \json ->
+        check = \ds ->
+            when ds is
+                [head, .. as tail] ->
+                    when head json is
                         Ok res -> Ok res
-                        Err _ -> help tail
-                [] -> Err(OneOfFailed "No decoders provided to oneOf")
-        help decoders
+                        Err _ -> check tail
 
-            
-# TODO - Sum and Product decoders 
-# product=\a, b, c, decoderA, decoderB, decoderC, f -> 
- # could you take in a dictionary of Dict Str JsonDecoder a?
- product : Str, Str, Str, JsonDecoder a, JsonDecoder b, JsonDecoder c, ((a, b, c) -> d) -> JsonDecoder d
- altPr : List (Str, JsonDecoder a) 
+                [] -> Err (OneOfFailed "No decoders provided to oneOf")
+        check decoders
 
-# sum : JsonDecoder a, JsonDecoder b -> JsonDecoder c
-# sum : [JsonDecoder a] -> JsonDecoder a
-# sum =\ds -> 
-#     \data -> 
-#         List.mapTry ds (\decoder -> decoder data)
-        # when decoderA data is 
-        #     Ok a -> a
-        #     _ -> when decoderB data is 
-        #         Ok b -> b
-        #         Err b -> Err b
-# sum: List (JsonDecoder a) -> JsonDecoder a ⁠
+tag : Dict Str (JsonDecoder a) -> JsonDecoder a
+tag = \dict ->
+    \json ->
+        key = (field "#type" string) json
+        when key is
+            Ok k ->
+                when Dict.get dict k is
+                    Ok decoder -> decoder json
+                    Err e -> Err e
 
-# sum : [JsonDecoder a] -> JsonDecoder a
-# sum =\ decoders -> 
-#     \data -> 
-#         List.walkTry decoders \d -> d
+            _ -> Err (FieldNotFound "Could not find #type discriminator")
 
+typeToStr : Json -> Str
+typeToStr = \json ->
+    when json is
+        String str -> "String $(str)"
+        Number num -> "Number $(Num.toStr num)"
+        Boolean _ -> "Boolean"
+        Object _ -> "Object"
+        Arr _ -> "Arr"
+# does roc have a way of doing this more idiomatically
 
+# TODO - Product decoders
+# product=\a, b, c, decoderA, decoderB, decoderC, f ->
+record : Str, Str, Str, JsonDecoder a, JsonDecoder b, JsonDecoder c, ((a, b, c) -> d) -> JsonDecoder d
+altPr : List (Str, JsonDecoder a)
 
 # TESTS
-mathsMod = Object
-    (
-        Dict.empty {}
-        |> Dict.insert "name" (String "Maths 101")
-        |> Dict.insert "credits" (Number 200)
-        |> Dict.insert "enrolled" (Boolean Bool.true)
-    )
-phyMod = Object
-    (
-        Dict.empty {}
-        |> Dict.insert "name" (String "Physics 101")
-        |> Dict.insert "credits" (Number 200)
-    )
+mathsMod =
+    Dict.empty {}
+    |> Dict.insert "name" (String "Maths 101")
+    |> Dict.insert "credits" (Number 200)
+    |> Dict.insert "enrolled" (Boolean Bool.true)
+    |> Object
+
+phyMod =
+    Dict.empty {}
+    |> Dict.insert "name" (String "Physics 101")
+    |> Dict.insert "credits" (Number 200)
+    |> Object
+
 nameDecoder = field "name" string
 creditsDecoder = field "credits" number
 enrolledDecoder = field "enrolled" bool
 
 # map tests
 expect (map nameDecoder \name -> { name: name }) phyMod == Ok ({ name: "Physics 101" })
-expect (map enrolledDecoder \name -> { name: name }) phyMod == Err(KeyNotFound)
+expect (map enrolledDecoder \name -> { name: name }) phyMod == Err (KeyNotFound)
 
 # map2 tests
 expect (map2 nameDecoder creditsDecoder \name, credits -> { name: name, credits: credits }) (phyMod) == Ok ({ name: "Physics 101", credits: 200 })
@@ -170,12 +170,3 @@ expect string (Number 123) == Err (WrongJsonType "Expected a String when decodin
 expect bool (Boolean Bool.true) == Ok Bool.true
 expect number (Number 400) == Ok (400)
 # expect null (Null) == Ok ("null")
-
-typeToStr : Json -> Str
-typeToStr = \json ->
-    when json is 
-        String str -> "String $(str)"
-        Number num -> "Number $(Num.toStr num)"
-        Boolean _ -> "Boolean"
-        Object _ -> "Object"
-        Arr _ -> "Arr"

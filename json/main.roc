@@ -12,33 +12,36 @@ main =
     Stdout.line! students
 
 expect DecodeStudent.readStudents input == Ok expected
-expect DecodeStudentLong.getListStudents input == Ok expected
+expect DecodeStudentLong.readStudents input == Ok expected
 # expected Student output
 expected = [
     CurrentStudent {
         name: "Amy",
         modules: [{ name: "Maths 101", credits: 200, enrolled: Bool.true }, { name: "Physics 101", credits: 100, enrolled: Bool.false }],
-        currentGrade: 75,
+        grade: 75,
     },
     GraduatedStudent {
         name: "John",
         modules: [{ name: "Maths 101", credits: 200, enrolled: Bool.true }],
-        finalGrade: 65,
+        grade: 65,
     },
 ]
+
 # JsonData representation for input
 input = Object (Dict.single "students" (Arr [amyObj, johnObj]))
 amyObj =
     Dict.empty {}
     |> Dict.insert "name" (String "Amy")
     |> Dict.insert "modules" (amyMods)
-    |> Dict.insert "currentGrade" (Number 75)
+    |> Dict.insert "grade" (Number 75)
+    |> Dict.insert "#type" (String "currentStudent")
     |> Object
 johnObj =
     Dict.empty {}
     |> Dict.insert "name" (String "John")
     |> Dict.insert "modules" (johnMod)
-    |> Dict.insert "finalGrade" (Number 65)
+    |> Dict.insert "grade" (Number 65)
+    |> Dict.insert "#type" (String "graduatedStudent")
     |> Object
 amyMods = Arr [mathsMod, physicsMod]
 johnMod = Arr [mathsMod]

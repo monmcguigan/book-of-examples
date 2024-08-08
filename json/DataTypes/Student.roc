@@ -4,12 +4,12 @@ Student : [
     CurrentStudent {
         name : Str,
         modules : List (Module),
-        currentGrade : U64
+        grade : U64
     }, 
     GraduatedStudent {
         name : Str,
         modules : List (Module),
-        finalGrade : U64
+        grade : U64
     }
 ]
 
