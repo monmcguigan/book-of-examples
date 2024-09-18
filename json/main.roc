@@ -5,53 +5,56 @@ app [main] {
 import "DataTypes/StudentData.json" as students : Str
 import pf.Stdout
 import pf.Task
-import jd.StudentHandler
+import jd.DecodeStudent
+import jd.DecodeStudentLong
 
 main =
-    Stdout.line! "$(students)"
+    Stdout.line! students
 
-expect StudentHandler.readStudents input == Ok expected
+expect DecodeStudent.readStudents input == Ok expected
+expect DecodeStudentLong.readJson input == Ok expected
 # expected Student output
 expected = [
-    {
+    CurrentStudent {
         name: "Amy",
         modules: [{ name: "Maths 101", credits: 200, enrolled: Bool.true }, { name: "Physics 101", credits: 100, enrolled: Bool.false }],
+        grade: 75,
     },
-    {
+    GraduatedStudent {
         name: "John",
         modules: [{ name: "Maths 101", credits: 200, enrolled: Bool.true }],
+        grade: 65,
     },
 ]
-# JsonData representation for input
-input = Object (Dict.empty {} |> Dict.insert "students" (Arr [amyObj, johnObj]))
-amyObj =
-    Object
-        (
-            Dict.empty {}
-            |> Dict.insert "name" (String "Amy")
-            |> Dict.insert "modules" (amyMods)
-        )
-johnObj =
-    Object
-        (
-            Dict.empty {}
-            |> Dict.insert "name" (String "John")
-            |> Dict.insert "modules" (johnMod)
-        )
-amyMods = Arr ([mathsMod, physicsMod])
-johnMod = Arr ([mathsMod])
 
-mathsMod = Object
-    (
-        Dict.empty {}
-        |> Dict.insert "name" (String "Maths 101")
-        |> Dict.insert "credits" (Number 200)
-        |> Dict.insert "enrolled" (Boolean Bool.true)
-    )
-physicsMod = Object
-    (
-        Dict.empty {}
-        |> Dict.insert "name" (String "Physics 101")
-        |> Dict.insert "credits" (Number 100)
-        |> Dict.insert "enrolled" (Boolean Bool.false)
-    )
+# JsonData representation for input
+input = Object (Dict.single "students" (Array [amyObj, johnObj]))
+amyObj =
+    Dict.empty {}
+    |> Dict.insert "name" (String "Amy")
+    |> Dict.insert "modules" (amyMods)
+    |> Dict.insert "grade" (Number 75)
+    |> Dict.insert "#type" (String "currentStudent")
+    |> Object
+johnObj =
+    Dict.empty {}
+    |> Dict.insert "name" (String "John")
+    |> Dict.insert "modules" (johnMod)
+    |> Dict.insert "grade" (Number 65)
+    |> Dict.insert "#type" (String "graduatedStudent")
+    |> Object
+amyMods = Array [mathsMod, physicsMod]
+johnMod = Array [mathsMod]
+
+mathsMod =
+    Dict.empty {}
+    |> Dict.insert "name" (String "Maths 101")
+    |> Dict.insert "credits" (Number 200)
+    |> Dict.insert "enrolled" (Boolean Bool.true)
+    |> Object
+physicsMod =
+    Dict.empty {}
+    |> Dict.insert "name" (String "Physics 101")
+    |> Dict.insert "credits" (Number 100)
+    |> Dict.insert "enrolled" (Boolean Bool.false)
+    |> Object

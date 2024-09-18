@@ -1,9 +1,17 @@
 module [Student, Module]
  
-Student : {
-    name : Str,
-    modules : List (Module)
-}
+Student : [
+    CurrentStudent {
+        name : Str,
+        modules : List (Module),
+        grade : U64
+    }, 
+    GraduatedStudent {
+        name : Str,
+        modules : List (Module),
+        grade : U64
+    }
+]
 
 Module : {
     name : Str,
