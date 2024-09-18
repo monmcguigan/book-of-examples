@@ -19,13 +19,13 @@ list : JsonEncoder a -> JsonEncoder (List a)
 list = \encoderA ->
     \data ->
         json = List.map data encoderA
-        Arr json
+        Array json
 
 # field : Str, JsonEncoder a -> JsonEncoder (Str, Json)
-field = \ fieldName, encoderA -> 
-        \data -> 
-            j = encoderA data
-            (fieldName, j)
+field = \fieldName, encoderA ->
+    \data ->
+        j = encoderA data
+        (fieldName, j)
 # TESTS
 # primitives
 expect string "hello" == (String "hello")
@@ -35,7 +35,7 @@ expect bool Bool.true == (Boolean Bool.true)
 
 # list tests
 strs = ["hello", "hello again"]
-expect (list string) strs == Arr[(String "hello"), (String "hello again")]
+expect (list string) strs == Array [String "hello", String "hello again"]
 
-# field encoder 
+# field encoder
 expect (field "fieldName" string) "fieldValue" == ("fieldName", String "fieldValue")

@@ -7,14 +7,10 @@
                     "name": "Physics 101",
                     "credits": 10,
                     "enrolled": true
-                },
-                {
-                    "name": "Maths 101",
-                    "credits": 20,
-                    "enrolled": true
                 }
             ],
-            "currentGrade": 75
+            "grade": 75,
+            "#type": "CurrentStudent"
         },
         {
             "name": "Bob",
@@ -25,7 +21,8 @@
                     "enrolled": false
                 }
             ],
-            "finalGrade": 70
+            "grade": 70,
+            "#type": "GraduatedStudent"
         }
     ]
 }

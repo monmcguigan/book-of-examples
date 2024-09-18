@@ -1,14 +1,12 @@
-module [string, number, bool, list, field, map, map2, map3, andThen, or, oneOf, tag, JsonDecoder, DecodingErrors]
+module [string, number, bool, array, field, map, map2, map3, andThen, or, oneOf, tag, JsonDecoder, DecodingErrors, typeToStr]
 import JsonData exposing [Json]
 
 DecodingErrors : [
     FieldNotFound Str,
-    ExpectedJsonObject Str,
-    ExpectedJsonArray Str,
     WrongJsonType Str,
     KeyNotFound,
-    DecodingFailed,
     OneOfFailed Str,
+    DecoderNotFound Str
 ]
 
 JsonDecoder t : Json -> Result t DecodingErrors
@@ -18,43 +16,45 @@ string : JsonDecoder Str
 string = \json ->
     when json is
         String str -> Ok str
-        _ -> Err (WrongJsonType "Expected a String when decoding, found $(typeToStr json)")
+        _ -> Err (WrongJsonType "$(typeToStr json)")
 
 number : JsonDecoder U64
 number = \json ->
     when json is
         Number num -> Ok num
-        _ -> Err (WrongJsonType "Expected a Number when decoding")
+        _ -> Err (WrongJsonType "$(typeToStr json)")
 
 bool : JsonDecoder Bool
 bool = \json ->
     when json is
         Boolean b -> Ok b
-        _ -> Err (WrongJsonType "Expected a Bool when decoding")
+        _ -> Err (WrongJsonType "$(typeToStr json)")
 
-list : JsonDecoder a -> JsonDecoder (List a)
-list = \decoderA ->
-    \data ->
-        when data is
-            Arr jsonValues -> List.mapTry jsonValues decoderA
-            _ -> Err (ExpectedJsonArray "Expected an Arr when decoding")
+array : JsonDecoder a -> JsonDecoder (List a)
+array = \decoderA ->
+    \json ->
+        when json is
+            Array jsonValues -> List.mapTry jsonValues decoderA
+            _ -> Err (WrongJsonType "$(typeToStr json)")
 
 field : Str, JsonDecoder a -> JsonDecoder a
-field = \name, decoder ->
-    \data ->
-        when data is
+field = \fieldName, decoder ->
+    \json ->
+        when json is
             Object dict ->
-                when Dict.get dict name is
-                    Ok v -> decoder v
-                    Err s -> Err s
+                result = Dict.get dict fieldName 
+                Result.try result (\a -> decoder a)
 
-            _ -> Err (WrongJsonType "Expected an Object when decoding")
+            _ -> Err (WrongJsonType "$(typeToStr json)")
+
+# If the result is Ok, 
+# transforms the entire result by running a conversion function on the value the Ok holds. 
+# Then returns that new result. If the result is Err, this has no effect. Use onErr to transform an Err.
+# try : Result a err, (a -> Result b err) -> Result b err
 
 map : JsonDecoder a, (a -> b) -> JsonDecoder b
 map = \decoderA, f ->
     \data -> Result.map (decoderA data) f
-# \data -> decoderA data |> Result.map f
-# decoderA |> Result.map f
 
 map2 : JsonDecoder a, JsonDecoder b, (a, b -> c) -> JsonDecoder c
 map2 = \decoderA, decoderB, f ->
@@ -72,6 +72,10 @@ map3 = \decoderA, decoderB, decoderC, f ->
             (Err a, _, _) -> Err a
             (_, Err b, _) -> Err b
             (_, _, Err c) -> Err c
+
+              
+# how to write mapN
+# is there a way for me to define a function that has n number of input fields does roc let me do this
 
 andThen : (a -> JsonDecoder b), JsonDecoder a -> JsonDecoder b
 andThen = \toB, aDecoder ->
@@ -100,26 +104,25 @@ oneOf = \decoders ->
         check decoders
 
 tag : Dict Str (JsonDecoder a) -> JsonDecoder a
-tag = \dict ->
+tag = \decoders ->
     \json ->
-        key = (field "#type" string) json
-        when key is
-            Ok k ->
-                when Dict.get dict k is
+        type = (field "#type" string) json
+        when type is
+            Ok tagName ->
+                when Dict.get decoders tagName is 
                     Ok decoder -> decoder json
-                    Err e -> Err e
+                    _ -> Err(DecoderNotFound "Could not get decoder for $(tagName) type discriminator")
 
             _ -> Err (FieldNotFound "Could not find #type discriminator")
 
 typeToStr : Json -> Str
 typeToStr = \json ->
     when json is
-        String str -> "String $(str)"
-        Number num -> "Number $(Num.toStr num)"
+        String _ -> "String"
+        Number _ -> "Number"
         Boolean _ -> "Boolean"
         Object _ -> "Object"
-        Arr _ -> "Arr"
-# does roc have a way of doing this more idiomatically
+        Array _ -> "Array"
 
 # TODO - Product decoders
 # product=\a, b, c, decoderA, decoderB, decoderC, f ->
@@ -155,18 +158,19 @@ expect (map2 nameDecoder creditsDecoder \name, credits -> { name: name, credits:
 expect (map3 nameDecoder creditsDecoder enrolledDecoder \name, credits, enrolled -> { name: name, credits: credits, enrolled: enrolled }) (mathsMod) == Ok ({ name: "Maths 101", credits: 200, enrolled: Bool.true })
 
 # list tests
-myList = Arr [String "hello", String "world"]
-expect (list string) myList == Ok (["hello", "world"])
-expect (list string) mathsMod == Err (ExpectedJsonArray "Expected an Arr when decoding")
+myList = Array [String "hello", String "world"]
+expect (array string) myList == Ok (["hello", "world"])
+expect (array string) mathsMod == Err (WrongJsonType "Object")
 
 # field tests
 expect nameDecoder mathsMod == Ok ("Maths 101")
-expect nameDecoder myList == Err (WrongJsonType "Expected an Object when decoding")
+expect nameDecoder myList == Err (WrongJsonType "Array")
 expect (field "blah" string) mathsMod == Err KeyNotFound
 
 # primitive types
 expect string (String "hello") == Ok ("hello")
-expect string (Number 123) == Err (WrongJsonType "Expected a String when decoding, found Number 123")
+expect string (Number 123) == Err (WrongJsonType "Number")
 expect bool (Boolean Bool.true) == Ok Bool.true
 expect number (Number 400) == Ok (400)
 # expect null (Null) == Ok ("null")
+myotherList = Array [String "s", Nummber 56]

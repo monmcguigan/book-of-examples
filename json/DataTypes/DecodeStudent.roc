@@ -1,15 +1,15 @@
 module [readStudents]
 
 import Student exposing [Student, Module]
-import Decoding exposing [JsonDecoder, list, field, string, number, bool, map2, map3, or, oneOf, tag]
+import Decoding exposing [JsonDecoder, array, field, string, number, bool, map2, map3, or, oneOf, tag]
 
 Students : List Student
 Modules : List Module
 
 readStudents : JsonDecoder Students
 readStudents = \json ->
-    studentsField = \s -> (list readStudent) s
-    (field "students" studentsField) json
+    studentsDecoder = array readStudent
+    (field "students" studentsDecoder) json
 
 readStudent : JsonDecoder Student
 readStudent = \json ->
@@ -22,18 +22,19 @@ readStudent = \json ->
     studentDecoders = 
         Dict.empty {}
         |> Dict.insert "currentStudent" currentStudent 
-        |> Dict.insert "graduatedStudent" graduatedStudent
+        |> Dict.insert "graduatedStudent" graduatedStudent 
     (tag studentDecoders) json
 
 readModules : JsonDecoder Modules
 readModules = \json -> 
-    moduleField = \m -> (list readModule) m
-    (field "modules" moduleField) json
+    modulesDecoder = array readModule
+    (field "modules" modulesDecoder) json
 
 readModule : JsonDecoder Module
 readModule = \json ->
     nameField = field "name" string
     creditsField = field "credits" number
     enrolledField = field "enrolled" bool
-    (map3 nameField creditsField enrolledField 
-        \name, credits, enrolled -> { name, credits, enrolled }) json
+    f = \name, credits, enrolled -> { name, credits, enrolled }
+    module = map3 nameField creditsField enrolledField f 
+    module json

@@ -1,35 +1,30 @@
-module [readStudents]
+module [readJson]
 
 import JsonData exposing [Json]
 import Student exposing [Student, Module]
-
-JsonErrors : [
-    FieldNotFound Str,
-    ExpectedJsonObject Str,
-    ExpectedJsonArray Str,
-]
+import Decoding exposing [typeToStr, DecodingErrors]
 
 Students : List Student
 
-readStudents : Json -> Result Students JsonErrors
-readStudents = \json ->
+readJson : Json -> Result Students DecodingErrors
+readJson = \json ->
     when json is
         Object obj ->
             when Dict.get obj "students" is
-                Ok students -> checkStudentArr students
-                Err KeyNotFound -> Err (FieldNotFound "Expected field with name students in object")
+                Ok students -> readStudents students
+                Err KeyNotFound -> Err (FieldNotFound "students")
 
-        _ -> Err (ExpectedJsonObject "Expected an Object")
+        _ -> Err (WrongJsonType "$(typeToStr json)")
 
-checkStudentArr : Json -> Result Students JsonErrors
-checkStudentArr = \json ->
+readStudents : Json -> Result Students DecodingErrors
+readStudents = \json ->
     when json is
-        Arr students ->
+        Array students ->
             List.mapTry students readStudent
 
-        _ -> Err (ExpectedJsonArray "Expected an Array")
+        _ -> Err (WrongJsonType "$(typeToStr json)")
 
-readStudent : Json -> Result Student JsonErrors
+readStudent : Json -> Result Student DecodingErrors
 readStudent = \json ->
     when json is
         Object obj ->
@@ -37,34 +32,34 @@ readStudent = \json ->
                 Ok (String name) ->
                     when Dict.get obj "modules" is
                         Ok moduleArr ->
-                            when checkModulesArr moduleArr is
+                            when readModules moduleArr is
                                 Ok modules ->
                                     when Dict.get obj "grade" is
                                         Ok (Number grade) ->
                                             when Dict.get obj "#type" is
                                                 Ok (String "currentStudent") -> Ok (CurrentStudent { name, modules, grade })
                                                 Ok (String "graduatedStudent") -> Ok (GraduatedStudent { name, modules, grade })
-                                                _ -> Err (FieldNotFound "Expected type discriminator field in object")
+                                                _ -> Err (FieldNotFound "#type")
 
-                                        _ -> Err (FieldNotFound "Expected field with name grade in object")
+                                        _ -> Err (FieldNotFound "grade")
 
                                 Err e -> Err e
 
-                        _ -> Err (FieldNotFound "Expected field with name modules in object")
+                        _ -> Err (FieldNotFound "modules")
 
-                _ -> Err (FieldNotFound "Expected field with name name in object")
+                _ -> Err (FieldNotFound "name")
 
-        _ -> Err (ExpectedJsonObject "Expected an Object")
+        _ -> Err (WrongJsonType "$(typeToStr json)")
 
-checkModulesArr : Json -> Result (List Module) JsonErrors
-checkModulesArr = \json ->
+readModules : Json -> Result (List Module) DecodingErrors
+readModules = \json ->
     when json is
-        Arr modules ->
+        Array modules ->
             List.mapTry modules readModule
 
-        _ -> Err (ExpectedJsonArray "Expected an Array")
+        _ -> Err (WrongJsonType "$(typeToStr json)")
 
-readModule : Json -> Result Module JsonErrors
+readModule : Json -> Result Module DecodingErrors
 readModule = \json ->
     when json is
         Object fields ->
@@ -76,10 +71,10 @@ readModule = \json ->
                                 Ok (Boolean enrolled) ->
                                     Ok ({ name, credits, enrolled })
 
-                                _ -> Err (FieldNotFound "Expected field with name \"credits\" in object")
+                                _ -> Err (FieldNotFound "enrolled")
 
-                        _ -> Err (FieldNotFound "Expected field with name \"credits\" in object")
+                        _ -> Err (FieldNotFound "credits")
 
-                _ -> Err (FieldNotFound "Expected field with name \"name\" in object")
+                _ -> Err (FieldNotFound "name")
 
-        _ -> Err (ExpectedJsonObject "Expected an Object")
+        _ -> Err (WrongJsonType "$(typeToStr json)")
